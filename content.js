@@ -413,12 +413,11 @@ function clickNewMessageButtons() {
   const allButtons = document.querySelectorAll('button')
 
   for (const btn of allButtons) {
-    const text = btn.innerText.toLowerCase()
-    // Check if button text contains "show" and "new" (like "Show 1 new message")
+    const text = btn.innerText.toLowerCase().trim()
+    // Only match "Show X new message(s)" pattern - must start with "show"
     if (
-      (text.includes('show') && text.includes('new')) ||
-      (text.includes('new') && text.includes('message')) ||
-      (text.includes('new') && text.includes('post'))
+      text.startsWith('show') &&
+      (text.includes('message') || text.includes('post') || text.includes('conversation'))
     ) {
       console.log('🔄 Clicking "Show new messages" button:', btn.innerText)
       btn.click()
@@ -433,7 +432,7 @@ function clickNewMessageButtons() {
 function startNewMessageWatcher() {
   setInterval(() => {
     clickNewMessageButtons()
-  }, 3000) // Check every 5 seconds
+  }, 5000) // Check every 5 seconds
 }
 
 // ========== END NEW CODE ==========
@@ -459,9 +458,12 @@ async function startObserver() {
         processAddedNode(node)
 
         // ========== NEW CODE: Check if added node is "Show new messages" button ==========
-        if (node instanceof HTMLElement) {
-          const text = node.innerText?.toLowerCase() || ''
-          if (text.includes('show') && text.includes('new')) {
+        if (node instanceof HTMLElement && node.tagName === 'BUTTON') {
+          const text = node.innerText?.toLowerCase().trim() || ''
+          if (
+            text.startsWith('show') &&
+            (text.includes('message') || text.includes('post') || text.includes('conversation'))
+          ) {
             setTimeout(() => clickNewMessageButtons(), 500)
           }
         }
