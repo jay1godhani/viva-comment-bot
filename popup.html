@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Viva Auto-Comment</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h3>Viva Auto-Comment</h3>
+      <label>
+        <input type="checkbox" id="enabled" />
+        Enable Auto-Comment
+      </label>
+
+      <label>
+        <div>Message:</div>
+        <textarea id="message" rows="4"></textarea>
+      </label>
+
+      <button id="save">Save</button>
+      <div id="status" class="status"></div>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>
