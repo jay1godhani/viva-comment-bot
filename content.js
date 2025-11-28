@@ -7,7 +7,7 @@ const DEFAULT_MESSAGE = 'm'
 const DEFAULT_ENABLED = true
 
 // Auto-comment only if post contains these keywords
-const KEYWORDS = ['rush', 'rush below', 'job no']
+const KEYWORDS = ['rush', 'rush below', 'job no', 'time', 'due date']
 
 let settings = {
   message: DEFAULT_MESSAGE,
@@ -405,6 +405,39 @@ async function processAddedNode(node) {
   }
 }
 
+// ========== NEW CODE: Auto-click "Show new messages" buttons ==========
+
+// Auto-click "Show new messages" buttons
+function clickNewMessageButtons() {
+  // Find all buttons on the page
+  const allButtons = document.querySelectorAll('button')
+
+  for (const btn of allButtons) {
+    const text = btn.innerText.toLowerCase()
+    // Check if button text contains "show" and "new" (like "Show 1 new message")
+    if (
+      (text.includes('show') && text.includes('new')) ||
+      (text.includes('new') && text.includes('message')) ||
+      (text.includes('new') && text.includes('post'))
+    ) {
+      console.log('🔄 Clicking "Show new messages" button:', btn.innerText)
+      btn.click()
+      return true
+    }
+  }
+
+  return false
+}
+
+// Periodically check for "Show new messages" button
+function startNewMessageWatcher() {
+  setInterval(() => {
+    clickNewMessageButtons()
+  }, 3000) // Check every 5 seconds
+}
+
+// ========== END NEW CODE ==========
+
 // Start mutation observer
 async function startObserver() {
   await loadSettings()
@@ -424,11 +457,24 @@ async function startObserver() {
     for (const m of mutations) {
       for (const node of m.addedNodes) {
         processAddedNode(node)
+
+        // ========== NEW CODE: Check if added node is "Show new messages" button ==========
+        if (node instanceof HTMLElement) {
+          const text = node.innerText?.toLowerCase() || ''
+          if (text.includes('show') && text.includes('new')) {
+            setTimeout(() => clickNewMessageButtons(), 500)
+          }
+        }
+        // ========== END NEW CODE ==========
       }
     }
   })
 
   observer.observe(feed, { childList: true, subtree: true })
+
+  // ========== NEW CODE: Start periodic watcher ==========
+  startNewMessageWatcher()
+  // ========== END NEW CODE ==========
 
   // Initial scan for existing posts
   setTimeout(() => {
