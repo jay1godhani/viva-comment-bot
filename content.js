@@ -71,23 +71,36 @@ function postContainsKeyword(postEl) {
 }
 
 // Check if post already has a comment from us
+// Check if post already has a comment from us
 function hasExistingComment(postEl) {
-  const text = postEl.innerText.toLowerCase()
-  const ourMessage = settings.message.toLowerCase()
-
-  // Look for comment section
-  const commentSelectors = ['[class*="comment"]', '[class*="reply"]', '[class*="response"]']
-
-  for (const selector of commentSelectors) {
-    const comments = postEl.querySelectorAll(selector)
-    for (const comment of comments) {
-      if (comment.innerText.toLowerCase().trim() === ourMessage.trim()) {
-        return true
-      }
+    const ourMessage = settings.message.toLowerCase().trim();
+    
+    // 1. Find the main comment thread container for the post.
+    // Viva Engage often uses list items (<li>) or specific divs for individual comments.
+    // This looks for all elements that might contain a comment.
+    const allComments = postEl.querySelectorAll(
+        'li[role="listitem"], div[data-test-id*="comment"], div[class*="comment-item"]'
+    );
+    
+    if (allComments.length === 0) {
+        // No comments exist on the post at all.
+        return false;
     }
-  }
 
-  return false
+    // 2. Iterate through each comment element found.
+    for (const commentEl of allComments) {
+        // Check if the comment's text contains our specific message.
+        // We use .includes() for flexibility, as the comment might also contain a timestamp or minor formatting.
+        if (commentEl.innerText.toLowerCase().includes(ourMessage)) {
+            // Optional: You could add a check here to ensure the author is YOU.
+            // (Requires a known user selector/name, but is often too fragile.)
+            
+            console.log('⏭ Found existing comment by content:', ourMessage);
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // Find the actual post container
@@ -268,10 +281,11 @@ async function autoCommentOnPost(postEl) {
 
   // Check keyword condition first (before any UI checks)
   if (!postContainsKeyword(postEl)) {
-    postEl.setAttribute(settings.processedAttribute, 'skipped-no-keyword')
-    processedPosts.add(postId)
-    return false
-  }
+    console.log('⏭ Skipped post (No keyword found):', postId) // <--- ADD THIS LOG
+    postEl.setAttribute(settings.processedAttribute, 'skipped-no-keyword')
+    processedPosts.add(postId)
+    return false // <--- MUST RETURN FALSE
+  }
 
   const { commentButton } = findCommentControls(postEl)
   if (!commentButton) {
