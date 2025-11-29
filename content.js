@@ -85,43 +85,51 @@ function hasExistingComment(postEl) {
 }
 
 // Find the actual post container
+// Find the actual post container
 function findPostElement(element) {
-  // Viva Engage / Yammer specific selectors
-  const postSelectors = [
-    '[data-test-id="thread-card"]',
-    '[data-test-id="feed-item"]',
-    '[class*="threadCard"]',
-    '[class*="feedItem"]',
-    '[class*="post-container"]',
-    '[data-thread-id]',
-    'article',
-    'div[role="article"]',
-  ]
+  // Viva Engage / Yammer specific selectors
+  const postSelectors = [
+    '[data-test-id="thread-card"]',
+    '[data-test-id="feed-item"]',
+    '[class*="threadCard"]',
+    '[class*="feedItem"]',
+    '[class*="post-container"]',
+    '[data-thread-id]',
+    'article',
+    'div[role="article"]',
+  ]
+    
+    // Keywords for robust check (copied from KEYWORDS constant)
+    const CRITICAL_KEYWORDS = ['rush', 'rush below', 'job no', 'time', 'due date']; 
 
-  // Check if element itself is a post
-  for (const selector of postSelectors) {
-    if (element.matches && element.matches(selector)) return element
-  }
+  // Check if element itself is a post
+  for (const selector of postSelectors) {
+    if (element.matches && element.matches(selector)) return element
+  }
 
-  // Check ancestors up to 8 levels
-  let current = element
-  for (let i = 0; i < 8; i++) {
-    if (!current.parentElement) break
-    current = current.parentElement
+  // Check ancestors up to 8 levels
+  let current = element
+  for (let i = 0; i < 8; i++) {
+    if (!current.parentElement) break
+    current = current.parentElement
 
-    for (const selector of postSelectors) {
-      if (current.matches && current.matches(selector)) return current
-    }
+    for (const selector of postSelectors) {
+      if (current.matches && current.matches(selector)) return current
+    }
 
-    // Generic check: has both comment button and substantial text
-    const hasComment = current.querySelector('[aria-label*="omment"], button[title*="omment"]')
-    const hasText = current.innerText && current.innerText.length > 50
-    if (hasComment && hasText && !current.matches('body, html, main')) {
-      return current
-    }
-  }
+    // IMPROVED GENERIC CHECK:
+    const hasComment = current.querySelector('[aria-label*="omment"], button[title*="omment"]')
+    const hasText = current.innerText && current.innerText.length > 50
+    
+    // NEW CHECK: Look for at least one critical keyword in the current element's text
+    const hasCriticalKeyword = CRITICAL_KEYWORDS.some(kw => current.innerText.toLowerCase().includes(kw));
 
-  return null
+    if (hasComment && hasText && hasCriticalKeyword && !current.matches('body, html, main')) {
+      return current
+    }
+  }
+
+  return null
 }
 
 // Feed container detection
@@ -369,24 +377,31 @@ function findAllPosts(container) {
   }
 
   // Fallback: find elements with comment buttons
-  console.log('📋 Using fallback: finding elements with comment buttons')
-  const allElements = container.querySelectorAll('div')
+  console.log('📋 Using fallback: finding elements with comment buttons')
+  const allElements = container.querySelectorAll('div')
+    
+  // Keywords for robust check
+  const CRITICAL_KEYWORDS = ['rush', 'rush below', 'job no', 'time', 'due date']; 
 
-  for (const el of allElements) {
-    const hasCommentButton = el.querySelector(
-      'button[aria-label*="omment"], button[title*="omment"]'
-    )
-    const hasText = el.innerText && el.innerText.length > 50
-    const notProcessed = !el.hasAttribute(settings.processedAttribute)
+  for (const el of allElements) {
+    const hasCommentButton = el.querySelector(
+      'button[aria-label*="omment"], button[title*="omment"]'
+    )
+    const hasText = el.innerText && el.innerText.length > 50
+    const notProcessed = !el.hasAttribute(settings.processedAttribute)
 
-    if (hasCommentButton && hasText && notProcessed) {
-      // Make sure we're getting the post container, not nested elements
-      const post = findPostElement(el)
-      if (post && !posts.includes(post)) {
-        posts.push(post)
-      }
-    }
-  }
+    // NEW CHECK: Look for at least one critical keyword
+    const hasCriticalKeyword = CRITICAL_KEYWORDS.some(kw => el.innerText.toLowerCase().includes(kw));
+
+    // Only proceed if it has a comment button, substantial text, is not processed, AND has a critical keyword
+    if (hasCommentButton && hasText && notProcessed && hasCriticalKeyword) { 
+      // Make sure we're getting the post container, not nested elements
+      const post = findPostElement(el)
+      if (post && !posts.includes(post)) {
+        posts.push(post)
+      }
+    }
+  }
 
   console.log(`📋 Found ${posts.length} posts total`)
   return posts
