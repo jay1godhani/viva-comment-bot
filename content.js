@@ -60,8 +60,14 @@ function getPostIdentifier(postEl) {
 
 // Detect if post contains keywords
 function postContainsKeyword(postEl) {
-  const text = postEl.innerText.toLowerCase()
-  return KEYWORDS.some((kw) => text.includes(kw))
+  const text = postEl.innerText.toLowerCase()
+  
+  // 🚨 NEW DEBUG LINE: Log the full text it's checking
+  console.log('--- Checking Post Text ---');
+  console.log(text.substring(0, 300) + '...'); // Logs the first 300 characters
+  console.log('--------------------------');
+  
+  return KEYWORDS.some((kw) => text.includes(kw))
 }
 
 // Check if post already has a comment from us
@@ -86,50 +92,46 @@ function hasExistingComment(postEl) {
 
 // Find the actual post container
 // Find the actual post container
+// Find the actual post container
 function findPostElement(element) {
-  // Viva Engage / Yammer specific selectors
-  const postSelectors = [
-    '[data-test-id="thread-card"]',
-    '[data-test-id="feed-item"]',
-    '[class*="threadCard"]',
-    '[class*="feedItem"]',
-    '[class*="post-container"]',
-    '[data-thread-id]',
-    'article',
-    'div[role="article"]',
-  ]
-    
-    // Keywords for robust check (copied from KEYWORDS constant)
-    const CRITICAL_KEYWORDS = ['rush', 'rush below', 'job no', 'time', 'due date']; 
+    // Viva Engage / Yammer specific selectors
+    const POST_SELECTOR = [
+        '[role="feed"] > div[role="article"]',
+        '[data-test-id="thread-card"]',
+        '[data-test-id="feed-item"]',
+        '[class*="threadCard"]',
+        '[data-thread-id]',
+        'article',
+        'div[role="article"]',
+    ].join(', '); // Join them into a single selector string
 
-  // Check if element itself is a post
-  for (const selector of postSelectors) {
-    if (element.matches && element.matches(selector)) return element
-  }
+    // 1. Check if the element itself is a match (for added nodes)
+    if (element.matches && element.matches(POST_SELECTOR)) {
+        return element;
+    }
 
-  // Check ancestors up to 8 levels
-  let current = element
-  for (let i = 0; i < 8; i++) {
-    if (!current.parentElement) break
-    current = current.parentElement
+    // 2. Use closest() to find the nearest parent that matches a known post selector
+    const closestPost = element.closest(POST_SELECTOR);
 
-    for (const selector of postSelectors) {
-      if (current.matches && current.matches(selector)) return current
-    }
+    if (closestPost) {
+        return closestPost;
+    }
 
-    // IMPROVED GENERIC CHECK:
-    const hasComment = current.querySelector('[aria-label*="omment"], button[title*="omment"]')
-    const hasText = current.innerText && current.innerText.length > 50
-    
-    // NEW CHECK: Look for at least one critical keyword in the current element's text
-    const hasCriticalKeyword = CRITICAL_KEYWORDS.some(kw => current.innerText.toLowerCase().includes(kw));
+    // 3. Fallback check (using the old logic for elements that don't fit the selectors)
+    let current = element;
+    for (let i = 0; i < 8; i++) {
+        if (!current.parentElement) break;
+        current = current.parentElement;
 
-    if (hasComment && hasText && hasCriticalKeyword && !current.matches('body, html, main')) {
-      return current
-    }
-  }
+        const hasComment = current.querySelector('[aria-label*="omment"], button[title*="omment"]');
+        const hasText = current.innerText && current.innerText.length > 50;
 
-  return null
+        if (hasComment && hasText && !current.matches('body, html, main')) {
+            return current;
+        }
+    }
+
+    return null;
 }
 
 // Feed container detection
