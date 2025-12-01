@@ -59,15 +59,41 @@ function getPostIdentifier(postEl) {
 }
 
 // Detect if post contains keywords
+// Detect if post contains keywords
 function postContainsKeyword(postEl) {
-  const text = postEl.innerText.toLowerCase()
-  
-  // 🚨 NEW DEBUG LINE: Log the full text it's checking
-  console.log('--- Checking Post Text ---');
-  console.log(text.substring(0, 300) + '...'); // Logs the first 300 characters
-  console.log('--------------------------');
-  
-  return KEYWORDS.some((kw) => text.includes(kw))
+    const KEYWORDS_TO_CHECK = ['rush', 'rush below', 'job no', 'time', 'due date'];
+    
+    // Attempt to find the main body text container, excluding comments and sidebars.
+    // Viva/Yammer usually puts the main text in a specific block.
+    // Find an element that is likely the main body text (p tag, content-text class, etc.)
+    const mainBodyEl = postEl.querySelector(
+        'div[class*="content-text"], p[class*="content-text"], [data-test-id*="post-body"]'
+    );
+    
+    // If we can't find a specific body, fall back to the whole post innerText
+    const textToSearch = (mainBodyEl || postEl).innerText.toLowerCase();
+
+    // 🚨 NEW DEBUG LOGGING (Very detailed)
+    console.log(`--- Checking Post ID: ${getPostIdentifier(postEl)} ---`);
+    console.log(`Text being analyzed (first 300 chars): ${textToSearch.substring(0, 300)}...`);
+    
+    let foundKeyword = false;
+
+    // Iterate through keywords
+    for (const kw of KEYWORDS_TO_CHECK) {
+        if (textToSearch.includes(kw)) {
+            console.log(`✅ KEYWORD FOUND: "${kw}"`);
+            foundKeyword = true;
+            // DO NOT return true immediately, let the loop finish for full logging
+        }
+    }
+
+    if (!foundKeyword) {
+        console.log(`❌ NO JOB KEYWORDS found.`);
+    }
+    console.log('---------------------------------------------');
+
+    return foundKeyword;
 }
 
 // Check if post already has a comment from us
@@ -178,7 +204,7 @@ function findFeedContainer() {
     return scrollable
   }
 
-  console.warn('⚠ Feed container defaulting to body')
+  
   return document.body
 }
 
